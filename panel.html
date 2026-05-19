@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Voice Relay Panel</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: 'Segoe UI', sans-serif; background: #1a1a2e; color: #eee;
+       display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+.card { background: #16213e; border-radius: 12px; padding: 32px; width: 400px;
+        box-shadow: 0 8px 32px rgba(0,0,0,0.4); text-align: center; }
+h1 { font-size: 22px; margin-bottom: 4px; }
+.sub { color: #888; font-size: 13px; margin-bottom: 20px; }
+.row { display: flex; gap: 8px; margin-bottom: 12px; align-items: center; }
+.row label { width: 55px; text-align: right; font-size: 13px; color: #aaa; }
+.row input { flex: 1; padding: 8px 10px; border: 1px solid #333; border-radius: 6px;
+             background: #0f3460; color: #eee; font-size: 14px; }
+.btns { display: flex; gap: 10px; margin: 20px 0; }
+.btn { flex: 1; padding: 14px; border: none; border-radius: 8px; font-size: 16px;
+       cursor: pointer; font-weight: 600; }
+.btn-open { background: #10b981; color: #fff; }
+.btn-open:hover { background: #059669; }
+.btn-close { background: #ef4444; color: #fff; }
+.btn-close:hover { background: #dc2626; }
+.btn-status { background: #3b82f6; color: #fff; }
+.btn-status:hover { background: #2563eb; }
+.log { background: #0f3460; border-radius: 8px; padding: 16px; margin-top: 16px;
+       font: 13px 'Consolas', monospace; text-align: left; max-height: 200px;
+       overflow-y: auto; white-space: pre-wrap; word-break: break-all; }
+.log .ts { color: #888; }
+.log .ok { color: #10b981; }
+.log .err { color: #ef4444; }
+.badge { display: inline-block; padding: 3px 10px; border-radius: 12px; font-size: 12px; }
+.badge-on { background: #10b981; }
+.badge-off { background: #666; }
+</style>
+</head>
+<body>
+
+<div class="card">
+  <h1>Voice Relay</h1>
+  <p class="sub">PC → PTZ</p>
+
+  <div class="row">
+    <label>API</label>
+    <input id="url" value="http://127.0.0.1:8888">
+  </div>
+
+  <div class="btns">
+    <button class="btn btn-open" onclick="call('open')">OPEN</button>
+    <button class="btn btn-close" onclick="call('close')">CLOSE</button>
+    <button class="btn btn-status" onclick="call('status')">STATUS</button>
+  </div>
+
+  <div class="log" id="log">-- Ready --</div>
+</div>
+
+<script>
+function call(action) {
+  const base = document.getElementById('url').value.replace(/\/$/, '');
+  const log = document.getElementById('log');
+  const ts = new Date().toLocaleTimeString();
+
+  log.innerHTML += `<br><span class="ts">[${ts}]</span> ${action} → `;
+
+  fetch(base + '/' + action)
+    .then(r => r.json())
+    .then(json => {
+      const ok = json.ok;
+      log.innerHTML += `<span class="${ok ? 'ok' : 'err'}">${JSON.stringify(json)}</span>`;
+      const state = json.state || action;
+      log.innerHTML += ` <span class="badge badge-${state === 'open' ? 'on' : 'off'}">${state}</span>`;
+      log.scrollTop = log.scrollHeight;
+    })
+    .catch(err => {
+      log.innerHTML += `<span class="err">${err.message}</span>`;
+    });
+}
+setTimeout(() => call('status'), 300);
+</script>
+</body>
+</html>

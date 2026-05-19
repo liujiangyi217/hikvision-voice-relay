@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net9.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <UseWindowsForms>true</UseWindowsForms>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <StartupObject>VoiceRelay.Program</StartupObject>
+    <ApplicationIcon />
+    <PublishSingleFile>true</PublishSingleFile>
+    <DebugSymbols>false</DebugSymbols>
+    <DebugType>none</DebugType>
+    <IncludeAllContentForSelfExtract>true</IncludeAllContentForSelfExtract>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Content Include="..\bin\*.dll" CopyToOutputDirectory="PreserveNewest" Link="%(FileName)%(Extension)"
+             ExcludeFromSingleFile="true" />
+    <Content Include="..\bin\*.dat" CopyToOutputDirectory="PreserveNewest" Link="%(FileName)%(Extension)"
+             ExcludeFromSingleFile="true" />
+    <Content Include="..\bin\*.zip" CopyToOutputDirectory="PreserveNewest" Link="%(FileName)%(Extension)"
+             ExcludeFromSingleFile="true" />
+    <Content Include="..\bin\HCNetSDKCom\**\*.*" CopyToOutputDirectory="PreserveNewest"
+             Link="HCNetSDKCom\%(RecursiveDir)%(FileName)%(Extension)" ExcludeFromSingleFile="true" />
+    <Content Include="..\bin\ClientDemoDll\**\*.*" CopyToOutputDirectory="PreserveNewest"
+             Link="ClientDemoDll\%(RecursiveDir)%(FileName)%(Extension)" ExcludeFromSingleFile="true" />
+  </ItemGroup>
+
+</Project>
