@@ -193,20 +193,38 @@ public partial class Form1 : Form
     {
         _apiPort = int.TryParse(tbApiPort.Text, out int p) ? p : 8888;
 
-        try
+        // Try configured port, then fallback to 8889..8899
+        for (int port = _apiPort; port <= _apiPort + 10; port++)
         {
-            _tcpListener = new TcpListener(IPAddress.Loopback, _apiPort);
-            _tcpListener.Start();
-            _httpCts = new CancellationTokenSource();
-
-            Task.Run(() => TcpListenLoop(_httpCts.Token));
-
-            Log($"API: http://127.0.0.1:{_apiPort}/open  /close  /status");
+            try
+            {
+                _tcpListener = new TcpListener(IPAddress.Loopback, port);
+                _tcpListener.Start();
+                _apiPort = port;
+                break;
+            }
+            catch
+            {
+                _tcpListener = null;
+            }
         }
-        catch (Exception ex)
+
+        if (_tcpListener == null)
         {
-            Log($"WARN: API start failed: {ex.Message}");
+            Log($"API failed: ports {_apiPort}~{_apiPort + 10} all occupied. Change API port and retry.");
+            return;
         }
+
+        _httpCts = new CancellationTokenSource();
+        Task.Run(() => TcpListenLoop(_httpCts.Token));
+
+        // Update UI with actual port
+        if (InvokeRequired)
+            Invoke(() => tbApiPort.Text = _apiPort.ToString());
+        else
+            tbApiPort.Text = _apiPort.ToString();
+
+        Log($"API: http://127.0.0.1:{_apiPort}/open  /close  /status");
     }
 
     private async Task TcpListenLoop(CancellationToken ct)
