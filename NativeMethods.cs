@@ -63,6 +63,13 @@ public static class NativeMethods
         int lVoiceComHandle, byte[] pSendBuf, uint dwBufSize);
 
     [DllImport("HCNetSDK.dll", CallingConvention = CallingConvention.StdCall)]
+    public static extern bool NET_DVR_GetCurrentAudioCompress(
+        int lUserID, ref NET_DVR_COMPRESSION_AUDIO lpCompressAudio);
+
+    [DllImport("HCNetSDK.dll", CallingConvention = CallingConvention.StdCall)]
+    public static extern bool NET_DVR_SetLogToFile(int nLogLevel, string strLogDir, bool bAutoDel);
+
+    [DllImport("HCNetSDK.dll", CallingConvention = CallingConvention.StdCall)]
     public static extern bool NET_DVR_SetLogToFile(int nLogLevel, string strLogDir, int bAutoDel);
 
     // ==================== WinMM Audio ====================
@@ -198,6 +205,17 @@ public struct WAVEHDR
     public uint dwLoops;
     public IntPtr lpNext;
     public IntPtr reserved;
+}
+
+[StructLayout(LayoutKind.Sequential)]
+public struct NET_DVR_COMPRESSION_AUDIO
+{
+    public byte byAudioEncType;     // 0=G722.1, 1=G711_U, 2=G711_A, 6=G726, 8=PCM
+    public byte byAudioSamplingRate; // 0=default, 1=16k, 5=8k
+    public byte byAudioBitRate;
+    [MarshalAs(UnmanagedType.ByValArray, SizeConst = 4)]
+    public byte[] byres;
+    public byte bySupport;
 }
 
 // ==================== Delegates ====================

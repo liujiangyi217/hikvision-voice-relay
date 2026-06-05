@@ -13,6 +13,8 @@ public partial class Form1 : Form
     private bool _bLoggedIn = false;
     private bool _bIsTalking = false;
     private int _hVoiceHandle = -1;
+    private int _sendOkCount = 0;
+    private int _sendErrCount = 0;
 
     // WaveIn
     private IntPtr _hWaveIn = IntPtr.Zero;
@@ -376,6 +378,29 @@ public partial class Form1 : Form
         btnTalk.Enabled = true;
 
         Log($"Login OK - userID={_lUserID}");
+
+        // Query device audio codec
+        var audioCompress = new NET_DVR_COMPRESSION_AUDIO();
+        if (NET_DVR_GetCurrentAudioCompress(_lUserID, ref audioCompress))
+        {
+            string codecName = audioCompress.byAudioEncType switch
+            {
+                0 => "G722.1",
+                1 => "G711_U",
+                2 => "G711_A",
+                6 => "G726",
+                8 => "PCM",
+                _ => $"Unknown({audioCompress.byAudioEncType})"
+            };
+            string rateName = audioCompress.byAudioSamplingRate switch
+            {
+                0 => "default",
+                1 => "16kHz",
+                5 => "8kHz",
+                _ => $"{audioCompress.byAudioSamplingRate}"
+            };
+            Log($"Device audio: codec={codecName}, sampleRate={rateName}");
+        }
     }
 
     private void DoLogout()
@@ -405,6 +430,9 @@ public partial class Form1 : Form
     {
         try
         {
+            _sendOkCount = 0;
+            _sendErrCount = 0;
+
             _waveFormat = new WAVEFORMATEX
             {
                 wFormatTag = WAVE_FORMAT_PCM,
@@ -425,7 +453,7 @@ public partial class Form1 : Form
                 Log($"StartVoiceCom FAILED - err={err}");
                 return;
             }
-            Log($"Voice channel started - handle={_hVoiceHandle}");
+            Log($"Voice channel OK - handle={_hVoiceHandle} (type=MR_V30, chan=1, callback=null)");
 
             if (!OpenWaveIn())
             {
@@ -466,7 +494,7 @@ public partial class Form1 : Form
         }
 
         btnTalk.Text = "Start Relay";
-        Log("Stopped");
+        Log($"Stopped. Sent: {_sendOkCount} ok, {_sendErrCount} err");
     }
 
     // ==================== WaveIn ====================
@@ -545,10 +573,22 @@ public partial class Form1 : Form
         for (int i = 0; i < FRAME_SAMPLES; i++)
             g711Buf[i] = Linear2Alaw(pcmBuf[i]);
 
-        if (!NET_DVR_VoiceComSendData(_hVoiceHandle, g711Buf, G711_FRAME))
+        bool sent = NET_DVR_VoiceComSendData(_hVoiceHandle, g711Buf, G711_FRAME);
+        if (!sent)
         {
             uint err = NET_DVR_GetLastError();
-            Log($"Send FAILED - err={err}");
+            // Only log first few errors to avoid flooding
+            if (_sendErrCount < 5)
+            {
+                Log($"Send FAILED - handle={_hVoiceHandle}, err={err}");
+                _sendErrCount++;
+            }
+        }
+        else
+        {
+            _sendOkCount++;
+            if (_sendOkCount == 1)
+                Log($"First frame sent OK ({G711_FRAME} bytes G.711A)");
         }
 
         if (_bIsTalking)
